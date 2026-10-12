@@ -1,0 +1,68 @@
+### Pruebas con la extensión REST Client de VS Code (clic en "Send Request")
+### Cambia las contraseñas por las que usaste en: npm run setup
+
+@base = http://localhost:3000/api
+
+### 1. Salud del servidor (pública)
+GET {{base}}/health
+
+### 2. Login de administración
+# @name admin
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "Atalaya-Admin2026" }
+
+### 3. Login de analista
+# @name analista
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "username": "analista", "password": "Atalaya-Analista2026" }
+
+### 4. Resumen con token (200)
+GET {{base}}/dashboard
+Authorization: Bearer {{admin.response.body.token}}
+
+### 5. Resumen SIN token (401)
+GET {{base}}/dashboard
+
+### 6. Token falso (401)
+GET {{base}}/dashboard
+Authorization: Bearer token.falso.123
+
+### 7. Inventario con búsqueda válida (200)
+GET {{base}}/assets?q=backend
+Authorization: Bearer {{analista.response.body.token}}
+
+### 8. Búsqueda con caracteres peligrosos (400, validación)
+GET {{base}}/assets?q=<script>alert(1)</script>
+Authorization: Bearer {{analista.response.body.token}}
+
+### 9. Auditoría como administración (200)
+GET {{base}}/audit?limit=20
+Authorization: Bearer {{admin.response.body.token}}
+
+### 10. Auditoría como analista (403, mínimo privilegio)
+GET {{base}}/audit
+Authorization: Bearer {{analista.response.body.token}}
+
+### 11. Login con contraseña incorrecta (401)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "incorrecta" }
+
+### 12. Intento de inyección en el usuario (400)
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "username": "admin' OR '1'='1", "password": "x" }
+
+### 13. Cerrar sesión de analista (204)
+POST {{base}}/auth/logout
+Authorization: Bearer {{analista.response.body.token}}
+
+### 14. Usar el token ya cerrado (401: sesión revocada)
+GET {{base}}/dashboard
+Authorization: Bearer {{analista.response.body.token}}
