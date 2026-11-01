@@ -1,0 +1,1 @@
+# Archivo local de prueba (npm run demo). En AWS se usa /var/log/snort/alert_fast.txt

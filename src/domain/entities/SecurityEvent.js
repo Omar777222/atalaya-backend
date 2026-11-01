@@ -6,6 +6,8 @@ export const SecurityEventTypes = Object.freeze({
   TOKEN_REJECTED: 'TOKEN_REJECTED',
   ACCESS_DENIED: 'ACCESS_DENIED',
   INPUT_REJECTED: 'INPUT_REJECTED',
+  SERVICE_KEY_REJECTED: 'SERVICE_KEY_REJECTED',
+  IDS_RESET: 'IDS_RESET',
 });
 
 const SEVERITY = {
@@ -15,6 +17,8 @@ const SEVERITY = {
   INPUT_REJECTED: 'warning',
   TOKEN_REJECTED: 'high',
   ACCESS_DENIED: 'high',
+  SERVICE_KEY_REJECTED: 'high',
+  IDS_RESET: 'info',
 };
 
 export function createSecurityEvent({ type, username = null, ip = null, path = null, detail = '', requestId = null }) {

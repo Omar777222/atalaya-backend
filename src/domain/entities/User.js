@@ -2,15 +2,17 @@
 export const Roles = Object.freeze({
   ADMIN: 'admin',
   ANALYST: 'analyst',
+  CLIENT: 'client', // dueño del sitio protegido: solo ve el resumen de su servicio
 });
 
 export class User {
-  constructor({ id, username, displayName, role, passwordHash }) {
+  constructor({ id, username, displayName, role, passwordHash, clientId = null }) {
     this.id = String(id);
     this.username = username;
     this.displayName = displayName;
     this.role = role;
     this.passwordHash = passwordHash;
+    this.clientId = clientId === null || clientId === undefined ? null : String(clientId); // empresa a la que pertenece (rol client)
     Object.freeze(this);
   }
 

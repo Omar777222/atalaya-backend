@@ -1,0 +1,31 @@
+# Atalaya · Reglas locales de Snort 2.9 (HIDS en ec2-backend)
+# Copiar a /etc/snort/rules/local.rules · SID locales: 1000001 a 1000099
+# Generado con npm run rules:export: edita src/domain/catalog/detectionCatalog.js
+
+# ===== Objetivo 1 · ICMP (ping) =====
+# Tráfico: Un ping (ICMP echo request, tipo 8) desde el frontend hacia la IP privada del backend.
+# Por qué: La regla vigila cualquier echo request cuyo destino esté en HOME_NET (10.0.128.0/17). itype:8 evita alertar también por las respuestas.
+alert icmp any any -> $HOME_NET any (msg:"ATALAYA SNORT ICMP de prueba (ping)"; itype:8; classtype:misc-activity; sid:1000001; rev:1;)
+
+# ===== Objetivo 2 · Sniffer (Wireshark) =====
+# Tráfico: Un inicio de sesión en el sitio: Nginx reenvía el JSON con la contraseña a 10.0.128.10:3000 por HTTP.
+# Por qué: El TLS termina en el ALB/Nginx; el tramo interno por el peering viaja sin cifrar. Lo mismo que se ve con Wireshark en el .pcap lo ve Snort en la carga útil.
+alert tcp any any -> $HOME_NET 3000 (msg:"ATALAYA SNORT Credenciales en texto claro hacia la API"; flow:to_server,established; content:"|22|password|22|"; nocase; classtype:policy-violation; sid:1000003; rev:1;)
+
+# ===== Objetivo 3 · Escaneo con Nmap =====
+# Tráfico: nmap -sS contra el backend: cientos de paquetes SYN a puertos distintos en pocos segundos.
+# Por qué: Un cliente normal abre pocas conexiones. 20 SYN en 5 s desde la misma IP es la huella de un escaneo; threshold "both" emite una sola alerta por ventana para no saturar el log.
+alert tcp any any -> $HOME_NET any (msg:"ATALAYA SNORT Escaneo de puertos SYN (nmap)"; flags:S; threshold:type both, track by_src, count 20, seconds 5; classtype:attempted-recon; sid:1000002; rev:1;)
+
+# ===== Ampliación · sqlmap y fuerza bruta =====
+# Tráfico: Más de 5 intentos de login en 60 segundos (script con curl desde Kali o desde el frontend).
+# Por qué: detection_filter solo alerta a partir del sexto intento en la ventana: un usuario que se equivoca una vez no la dispara.
+alert tcp any any -> $HOME_NET 3000 (msg:"ATALAYA SNORT Posible fuerza bruta al login"; flow:to_server,established; content:"POST"; depth:4; content:"/api/auth/login"; within:30; detection_filter:track by_src, count 5, seconds 60; classtype:attempted-user; sid:1000004; rev:1;)
+
+# Tráfico: sqlmap con su User-Agent por defecto; Nginx lo reenvía tal cual a la API.
+# Por qué: sqlmap se identifica como "sqlmap/1.x". Es una firma fácil de evadir (--random-agent), por eso se complementa con la regla 1000006.
+alert tcp any any -> $HOME_NET 3000 (msg:"ATALAYA SNORT Herramienta sqlmap (User-Agent)"; flow:to_server,established; content:"User-Agent|3A| sqlmap"; nocase; classtype:web-application-attack; sid:1000005; rev:1;)
+
+# Tráfico: Las cargas útiles de sqlmap que prueban UNION ... SELECT en los parámetros.
+# Por qué: Detecta el contenido del ataque y no la herramienta: sigue funcionando aunque se cambie el User-Agent.
+alert tcp any any -> $HOME_NET 3000 (msg:"ATALAYA SNORT Inyeccion SQL UNION SELECT"; flow:to_server,established; content:"UNION"; nocase; content:"SELECT"; nocase; distance:0; classtype:web-application-attack; sid:1000006; rev:1;)

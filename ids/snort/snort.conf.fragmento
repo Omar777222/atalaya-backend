@@ -1,0 +1,17 @@
+# Líneas a revisar en /etc/snort/snort.conf (ec2-backend). Respalda antes:
+#   sudo cp /etc/snort/snort.conf ~/respaldo/snort.conf.$(date +%F)
+# Valida después: sudo snort -T -c /etc/snort/snort.conf -i eth0
+
+# Paso 1: red protegida = VPC del backend. El frontend (10.0.0.0/17) queda como externo (Zero Trust).
+ipvar HOME_NET 10.0.128.0/17
+ipvar EXTERNAL_NET !$HOME_NET
+
+# Rutas de reglas
+var RULE_PATH /etc/snort/rules
+include $RULE_PATH/local.rules
+
+# Paso 6: salida en formato fast: Snort escribe /var/log/snort/alert_fast.txt (el servicio usa -l /var/log/snort)
+output alert_fast: alert_fast.txt
+
+# Permisos de los archivos de log: 022 deja que la API (usuario sin privilegios) lea las alertas
+config umask: 022

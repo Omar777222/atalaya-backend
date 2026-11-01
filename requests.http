@@ -31,13 +31,20 @@ GET {{base}}/dashboard
 GET {{base}}/dashboard
 Authorization: Bearer token.falso.123
 
-### 7. Inventario con búsqueda válida (200)
-GET {{base}}/assets?q=backend
+### 7. Centro de monitoreo IDS (200)
+GET {{base}}/ids/overview
 Authorization: Bearer {{analista.response.body.token}}
 
-### 8. Búsqueda con caracteres peligrosos (400, validación)
-GET {{base}}/assets?q=<script>alert(1)</script>
+### 8. Alertas de Snort con filtro (200) y filtro inválido (400)
+GET {{base}}/ids/alerts?sensor=snort&limit=20
 Authorization: Bearer {{analista.response.body.token}}
+
+### 8b. Sensor que no existe (400, validación)
+GET {{base}}/ids/alerts?sensor=<script>
+Authorization: Bearer {{analista.response.body.token}}
+
+### 8c. Ruta interna sin clave de servicio (401 y evento SERVICE_KEY_REJECTED)
+GET {{base}}/internal/ids/feed
 
 ### 9. Auditoría como administración (200)
 GET {{base}}/audit?limit=20

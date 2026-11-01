@@ -1,0 +1,10 @@
+# /etc/snort/snort.debian.conf (ec2-backend): parámetros con los que ARRANCA EL SERVICIO.
+# Si no coinciden con snort.conf, Snort funciona en consola pero no como servicio.
+# También se pueden regenerar con: sudo dpkg-reconfigure snort
+DEBIAN_SNORT_STARTUP="boot"            # el documento dice "yes"; el paquete de Ubuntu acepta boot | dialup | manual
+DEBIAN_SNORT_HOME_NET="10.0.128.0/17"
+DEBIAN_SNORT_OPTIONS=""
+DEBIAN_SNORT_INTERFACE="eth0"          # confírmala con ip -br address
+DEBIAN_SNORT_SEND_STATS="true"
+DEBIAN_SNORT_STATS_RCPT="root"
+DEBIAN_SNORT_STATS_THRESHOLD="1"
