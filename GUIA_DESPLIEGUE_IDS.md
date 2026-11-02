@@ -23,9 +23,9 @@ El backend no tiene internet. Igual que en el proyecto Zero Trust, se habilita *
    ```bash
    cat /etc/os-release && ip -br address && ip route && sudo whoami     # 📸 F03 (identifica la interfaz: eth0 en t2, ens5 en t3)
    sudo apt update && sudo apt upgrade -y
-   sudo apt install -y snort snort-rules-default tcpdump ethtool acl nano
+   sudo apt install -y snort snort-rules-default tcpdump ethtool acl nano tshark   # tshark: alerta 2 (sniffer)
    ```
-   El asistente pregunta interfaz (`eth0`) y red local (`10.0.128.0/17`). 📸 **F04** pantalla del asistente.
+   El asistente pregunta interfaz (`eth0`) y red local (`10.0.128.0/24`, la subred que muestra `ip route`). 📸 **F04** pantalla del asistente.
    Aprovecha que hay salida a internet para tres cosas más (todas en la carpeta del backend):
    ```bash
    git pull                                   # código nuevo
@@ -42,8 +42,8 @@ mkdir -p ~/respaldo && sudo cp /etc/snort/snort.conf ~/respaldo/snort.conf.$(dat
 sudo cp /etc/snort/snort.debian.conf ~/respaldo/snort.debian.conf.$(date +%F)
 sudo nano /etc/snort/snort.conf
 ```
-Aplica lo de `atalaya-backend/ids/snort/snort.conf.fragmento` (HOME_NET `10.0.128.0/17`, EXTERNAL_NET `!$HOME_NET`,
-`include $RULE_PATH/local.rules`, `output alert_fast: alert_fast.txt`, `config umask: 022`).
+Aplica lo de `atalaya-backend/ids/snort/snort.conf.fragmento` (HOME_NET `10.0.128.0/24`, EXTERNAL_NET `!$HOME_NET`,
+`include $RULE_PATH/local.rules`, `output alert_fast: alert_fast.txt`, `config umask: 022`, `config checksum_mode: none`).
 
 ```bash
 grep -nE 'ipvar HOME_NET|ipvar EXTERNAL_NET|var RULE_PATH|local.rules|alert_fast' /etc/snort/snort.conf   # 📸 F08
@@ -56,10 +56,13 @@ sudo cp ids/snort/local.rules /etc/snort/rules/local.rules
 cat /etc/snort/rules/local.rules            # 📸 F10
 sudo snort -T -c /etc/snort/snort.conf -i eth0    # 📸 F11 "Snort successfully validated the configuration!"
 ```
+**Demostrar que `local.rules` se carga (lo pide la 2.5):** borra el `;` final de una regla con `sudo nano /etc/snort/rules/local.rules`,
+repite `snort -T` (📸 error que cita `local.rules` y la línea), restaura el `;` y valida otra vez (📸).
 Si -T falla, **captura el error y su corrección** (vale para "incidencias" en la rúbrica).
 
 Prueba en consola **antes** del servicio (requisito 6.6):
 ```bash
+sudo systemctl stop snort       # para no duplicar instancias
 sudo snort -A console -q -c /etc/snort/snort.conf -i eth0
 # en otra terminal, desde ec2-frontend:  ping -c 4 10.0.128.10        📸 F12 alerta [1:1000001:1] en consola junto al ping
 ```
@@ -68,6 +71,9 @@ Servicio (requisito 6.7):
 sudo systemctl enable --now snort && sudo systemctl restart snort
 sudo systemctl status snort --no-pager      # 📸 F13 active (running) y "-i eth0" en la línea de comando
 sudo journalctl -u snort -n 50 --no-pager   # 📸 F14
+ps -ef | grep [s]nort                       # confirma -i eth0 y HOME_NET
+systemctl is-enabled snort                  # debe decir enabled
+sudo tail -n 20 /var/log/snort/alert_fast.txt
 ```
 Atajo de transcripciones: `bash ids/snort/evidencias-snort.sh eth0` (desde la carpeta del backend) guarda todas las salidas en `~/evidencias/`.
 
@@ -98,7 +104,7 @@ suricata --build-info | head -n 5                                         # 📸
 sudo cp /etc/suricata/suricata.yaml /etc/suricata/suricata.yaml.bak
 sudo nano /etc/suricata/suricata.yaml     # aplica ids/suricata/suricata.yaml.fragmento.yaml
 cd ~/atalaya-frontend && git pull
-sudo cp ids/suricata/atalaya-*.rules /var/lib/suricata/rules/
+sudo cp ids/suricata/sensor*.rules /var/lib/suricata/rules/
 sudo suricata-update
 sudo ethtool -K ens5 gro off lro off
 sudo suricata -T -c /etc/suricata/suricata.yaml -v                        # 📸 F17
@@ -152,10 +158,13 @@ Por cada prueba toma: comando en Kali/terminal + alerta en `tail -f` del log + a
 
 | # | Prueba | Sensor / SID | Capturas |
 |---|---|---|---|
-| 1 | `ping -c 4 FRONT_PUB` (Kali) y `ping -c 4 10.0.128.10` (frontend) | Suricata 1100001 · Snort 1000001 | 📸 F24–F25 |
-| 2 | Wireshark en Kali + `curl` POST de login por HTTP · login normal en el sitio + `tcpdump` en el backend | Suricata 1100101 y 1100102 · Snort 1000003 | 📸 F26 Follow TCP Stream con la contraseña · F27 `.pcap` del backend en Wireshark · F28 alertas |
-| 3 | `sudo nmap -sS -p 1-1000 FRONT_PUB` y `-sV -sC -p 80` · `nmap -sS` desde el frontend al backend | Suricata 1100002, 1100003 · Snort 1000002 | 📸 F29–F31 |
-| + | sqlmap (`--random-agent` también) y fuerza bruta | Suricata 1100201–1100204 · Snort 1000004–1000006 | 📸 F32–F33 |
+| 1 | `ping -c 4 10.0.128.10` desde el frontend | Snort 1000001 | 📸 comando + alerta |
+| 2 | En el backend `tshark -n` (control, sin alerta) y `tshark -N nN` (con alerta) mientras el frontend hace ping | Snort 1000002 | 📸 las dos ejecuciones + alerta |
+| 3 | `sudo nmap -sS -p 1-200 10.0.128.10` desde el frontend | Snort 1000003 | 📸 comando + alerta |
+| S1 | Kali: `ping -c 10`, `nmap -sS -p 1-1000`, `nmap -sV -sC -p 80` al frontend | Suricata 1000001-1000003 | 📸 fast.log |
+| S2 | Kali: POST de login por HTTP + `tcpdump` + Wireshark + `suricata -r lab.pcap` | Suricata 1000100 (y 1000102 al iniciar sesión en el sitio) | 📸 Follow TCP Stream + fast.log |
+| S3 | Kali: sqlmap normal y con `--random-agent` | Suricata 1000200-1000203 | 📸 fast.log de ambas |
+| + | Login en el sitio (tramo interno en claro) y fuerza bruta | Snort 1000004, 1000005 | 📸 |
 
 Logs para las capturas: `sudo tail -f /var/log/snort/alert_fast.txt` (backend) y `sudo tail -f /var/log/suricata/fast.log` (frontend).
 Resumen con jq: `sudo jq -r 'select(.event_type=="alert") | .alert.signature' /var/log/suricata/eve.json | sort | uniq -c | sort -nr` 📸 **F34**.

@@ -38,8 +38,8 @@ for (const [key, rules] of byFile) {
   if (sensor === 'suricata' && !existsSync(resolve(frontendIds, '..', '..'))) continue;
   mkdirSync(dir, { recursive: true });
   const header = sensor === 'snort'
-    ? '# Atalaya · Reglas locales de Snort 2.9 (HIDS en ec2-backend)\n# Copiar a /etc/snort/rules/local.rules · SID locales: 1000001 a 1000099\n# Generado con npm run rules:export: edita src/domain/catalog/detectionCatalog.js'
-    : `# Atalaya · Reglas de Suricata (NIDS en ec2-frontend) · ${file}\n# Copiar a /var/lib/suricata/rules/ y agregar en rule-files de suricata.yaml · SID 1100001 a 1100299\n# Generado con npm run rules:export: edita atalaya-backend/src/domain/catalog/detectionCatalog.js`;
+    ? '# Atalaya · Reglas locales de Snort 2.9 (HIDS en ec2-backend)\n# Copiar a /etc/snort/rules/local.rules · SID 1000001-1000003 = las 3 reglas de la práctica; 1000004+ = ampliación\n# Generado con npm run rules:export: edita src/domain/catalog/detectionCatalog.js'
+    : `# Atalaya · Reglas de Suricata (NIDS en ec2-frontend) · ${file}\n# Copiar a /var/lib/suricata/rules/ y agregar en rule-files de suricata.yaml · Sensor 1: 1000001-099 · Sensor 2: 1000100-199 · Sensor 3: 1000200-299 (guía 2.6)\n# Generado con npm run rules:export: edita atalaya-backend/src/domain/catalog/detectionCatalog.js`;
   // order rules by objective order
   const order = Object.fromEntries(OBJECTIVES.map((o) => [o.id, o.order]));
   rules.sort((a, b) => order[a.objective] - order[b.objective] || a.sid - b.sid);

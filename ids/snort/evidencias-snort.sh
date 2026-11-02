@@ -4,6 +4,7 @@ OUT=~/evidencias/snort-$(date +%Y%m%d-%H%M%S).txt; mkdir -p ~/evidencias
 IFACE=${1:-eth0}
 run() { echo -e "\n===== \$ $* =====" | tee -a "$OUT"; eval "$@" 2>&1 | tee -a "$OUT"; }
 run cat /etc/os-release
+run dpkg -l \| grep -i snort
 run ip -br address
 run ip route
 run snort -V
@@ -17,5 +18,7 @@ run sudo snort -T -c /etc/snort/snort.conf -i $IFACE \| tail -n 25
 run sudo systemctl status snort --no-pager
 run sudo journalctl -u snort -n 50 --no-pager
 run "ps -ef | grep [s]nort"
+run systemctl is-enabled snort
 run sudo tail -n 20 /var/log/snort/alert_fast.txt
+run sudo tail -n 20 /var/log/snort/alert
 echo -e "\nGuardado en $OUT"

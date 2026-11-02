@@ -14,7 +14,7 @@ test('parsea una alerta ICMP de Snort 2 (sin año)', () => {
 });
 
 test('parsea TCP con puertos y fecha de Suricata (con año)', () => {
-  const a = parseFastLine('10/31/2026-18:20:01.000001  [**] [1:1100002:1] ATALAYA SURICATA Escaneo SYN (nmap) [**] [Classification: Attempted Information Leak] [Priority: 2] {TCP} 189.203.14.77:61022 -> 10.0.0.10:443', { sensor: 'suricata' });
+  const a = parseFastLine('10/31/2026-18:20:01.000001  [**] [1:1000001:1] ATALAYA S1 Escaneo SYN (Nmap) [**] [Classification: Attempted Information Leak] [Priority: 2] {TCP} 189.203.14.77:61022 -> 10.0.0.10:443', { sensor: 'suricata' });
   assert.equal(a.srcPort, 61022);
   assert.equal(a.dstIp, '10.0.0.10');
   assert.equal(a.classification, 'Attempted Information Leak');
@@ -25,7 +25,7 @@ test('ignora líneas que no son alertas', () => {
 });
 
 test('convierte un evento de eve.json y lo asocia al objetivo', () => {
-  const alert = createIdsAlert(fromEveAlert({ timestamp: '2026-10-31T18:20:01.123456+0000', src_ip: '1.2.3.4', dest_ip: '10.0.0.10', proto: 'ICMP', alert: { signature_id: 1100001, signature: 'x', severity: 3 } }));
+  const alert = createIdsAlert(fromEveAlert({ timestamp: '2026-10-31T18:20:01.123456+0000', src_ip: '1.2.3.4', dest_ip: '10.0.0.10', proto: 'ICMP', alert: { signature_id: 1000002, signature: 'x', severity: 3 } }));
   assert.equal(alert.objective, 'icmp');
   assert.equal(alert.timestamp, '2026-10-31T18:20:01.123Z');
 });
@@ -55,8 +55,8 @@ import { GetClientSummary } from '../src/application/use-cases/GetClientSummary.
 
 test('el resumen del cliente agrupa por categoría y no expone IPs', async () => {
   const alerts = [
-    { sensor: 'snort', sid: 1000002, objective: 'nmap', priority: 2, srcIp: '10.0.0.10', timestamp: new Date().toISOString() },
-    { sensor: 'suricata', sid: 1100201, objective: 'web', priority: 1, srcIp: '1.2.3.4', timestamp: new Date().toISOString() },
+    { sensor: 'snort', sid: 1000003, objective: 'nmap', priority: 2, srcIp: '10.0.0.10', timestamp: new Date().toISOString() },
+    { sensor: 'suricata', sid: 1000200, objective: 'web', priority: 1, srcIp: '1.2.3.4', timestamp: new Date().toISOString() },
   ];
   const uc = new GetClientSummary({
     alertStore: { all: async () => alerts },

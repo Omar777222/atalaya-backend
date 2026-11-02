@@ -2,8 +2,8 @@
 #   sudo cp /etc/snort/snort.conf ~/respaldo/snort.conf.$(date +%F)
 # Valida después: sudo snort -T -c /etc/snort/snort.conf -i eth0
 
-# Paso 1: red protegida = VPC del backend. El frontend (10.0.0.0/17) queda como externo (Zero Trust).
-ipvar HOME_NET 10.0.128.0/17
+# Paso 1: red protegida = subred del sensor (la que muestra ip route). El frontend (10.0.0.0/17) queda como externo (Zero Trust).
+ipvar HOME_NET 10.0.128.0/24
 ipvar EXTERNAL_NET !$HOME_NET
 
 # Rutas de reglas
@@ -15,3 +15,7 @@ output alert_fast: alert_fast.txt
 
 # Permisos de los archivos de log: 022 deja que la API (usuario sin privilegios) lea las alertas
 config umask: 022
+
+# La tarjeta virtual de AWS calcula los checksums por hardware (offloading): sin esto Snort descarta
+# los paquetes que SALEN del sensor (por ejemplo las consultas DNS PTR de la alerta 2)
+config checksum_mode: none

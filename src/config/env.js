@@ -88,7 +88,7 @@ config.ids = {
       homeNet: env('IDS_SURICATA_HOME_NET', '10.0.0.0/17'),
       externalNet: '!$HOME_NET',
       configFile: '/etc/suricata/suricata.yaml',
-      ruleFiles: ['atalaya-obj1-icmp.rules', 'atalaya-obj2-wireshark.rules', 'atalaya-obj3-nmap.rules', 'atalaya-extra-sqlmap.rules'],
+      ruleFiles: ['sensor1-nmap.rules', 'sensor2-wireshark.rules', 'sensor3-sqlmap.rules'],
       ruleDir: '/var/lib/suricata/rules',
       logFiles: ['/var/log/suricata/fast.log', '/var/log/suricata/eve.json'],
       testCommand: 'sudo suricata -T -c /etc/suricata/suricata.yaml -v',
@@ -103,7 +103,7 @@ config.ids = {
       ip: env('IDS_BACKEND_PRIVATE_IP', '10.0.128.10'),
       os: env('IDS_SNORT_OS', 'Ubuntu Server'),
       interface: env('IDS_SNORT_INTERFACE', 'eth0'),
-      homeNet: env('IDS_SNORT_HOME_NET', '10.0.128.0/17'),
+      homeNet: env('IDS_SNORT_HOME_NET', '10.0.128.0/24'), // subred del sensor (ip route)
       externalNet: '!$HOME_NET',
       configFile: '/etc/snort/snort.conf',
       ruleFiles: ['local.rules'],

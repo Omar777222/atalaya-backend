@@ -50,31 +50,32 @@ const heartbeat = () => post('/ids/heartbeat', { sensor: 'suricata', service: 'a
 const SCENARIOS = {
   async ping() {
     for (let i = 0; i < 4; i += 1) {
-      await post('/ids/suricata', { events: [eve(1100001, 'ATALAYA SURICATA ICMP echo request (ping)', 'Misc activity', 3, 'ICMP', null, null)] });
-      snort(1000001, 'ATALAYA SNORT ICMP de prueba (ping)', 'Misc activity', 3, 'ICMP', FRONT, BACK);
+      await post('/ids/suricata', { events: [eve(1000002, 'ATALAYA S1 Barrido ICMP (ping / Nmap -sn)', 'Misc activity', 3, 'ICMP', null, null)] });
+      snort(1000001, 'ATALAYA SNORT ICMP de prueba', 'Misc activity', 3, 'ICMP', FRONT, BACK);
       await sleep(700);
     }
   },
   async wireshark() {
-    await post('/ids/suricata', { events: [eve(1100102, 'ATALAYA SURICATA Credenciales en claro hacia el backend (peering)', 'Potential Corporate Privacy Violation', 1, 'TCP', 40122, 3000, { hostname: '10.0.128.10', url: '/api/auth/login', http_method: 'POST', http_user_agent: 'Mozilla/5.0' })].map((e) => ({ ...e, src_ip: FRONT, dest_ip: BACK })) });
-    await post('/ids/suricata', { events: [eve(1100101, 'ATALAYA SURICATA Credenciales en texto claro (HTTP POST)', 'Potential Corporate Privacy Violation', 1, 'TCP', 51544, 80, { hostname: '52.54.234.146', url: '/api/auth/login', http_method: 'POST', http_user_agent: 'curl/8.5.0', status: 301 })] });
-    snort(1000003, 'ATALAYA SNORT Credenciales en texto claro hacia la API', 'Potential Corporate Privacy Violation', 1, 'TCP', `${FRONT}:43870`, `${BACK}:3000`);
+    await post('/ids/suricata', { events: [eve(1000102, 'ATALAYA S2 Credenciales en claro hacia el backend (peering)', 'Potential Corporate Privacy Violation', 1, 'TCP', 40122, 3000, { hostname: '10.0.128.10', url: '/api/auth/login', http_method: 'POST', http_user_agent: 'Mozilla/5.0' })].map((e) => ({ ...e, src_ip: FRONT, dest_ip: BACK })) });
+    await post('/ids/suricata', { events: [eve(1000100, 'ATALAYA S2 Credenciales en HTTP POST (texto claro)', 'Potential Corporate Privacy Violation', 1, 'TCP', 51544, 80, { hostname: '52.54.234.146', url: '/api/auth/login', http_method: 'POST', http_user_agent: 'curl/8.5.0', status: 301 })] });
+    snort(1000002, 'ATALAYA SNORT DNS PTR - posible sniffer con resolucion de nombres', 'Potential Corporate Privacy Violation', 1, 'UDP', `${BACK}:41522`, '10.0.128.2:53');
+    snort(1000004, 'ATALAYA SNORT Credenciales en texto claro hacia la API', 'Potential Corporate Privacy Violation', 1, 'TCP', `${FRONT}:43870`, `${BACK}:3000`);
   },
   async nmap() {
-    await post('/ids/suricata', { events: [eve(1100002, 'ATALAYA SURICATA Escaneo SYN (nmap)', 'Attempted Information Leak', 2, 'TCP', 61022, 443)] });
-    snort(1000002, 'ATALAYA SNORT Escaneo de puertos SYN (nmap)', 'Attempted Information Leak', 2, 'TCP', `${FRONT}:58113`, `${BACK}:22`);
+    await post('/ids/suricata', { events: [eve(1000001, 'ATALAYA S1 Escaneo SYN (Nmap)', 'Attempted Information Leak', 2, 'TCP', 61022, 443)] });
+    snort(1000003, 'ATALAYA SNORT Posible escaneo SYN de puertos (nmap)', 'Attempted Information Leak', 2, 'TCP', `${FRONT}:58113`, `${BACK}:22`);
     await sleep(900);
-    await post('/ids/suricata', { events: [eve(1100003, 'ATALAYA SURICATA Nmap Scripting Engine', 'Web Application Attack', 1, 'TCP', 61040, 80, { hostname: '52.54.234.146', url: '/', http_method: 'GET', http_user_agent: 'Mozilla/5.0 (compatible; Nmap Scripting Engine; https://nmap.org/book/nse.html)', status: 301 })] });
+    await post('/ids/suricata', { events: [eve(1000003, 'ATALAYA S1 Nmap Scripting Engine', 'Web Application Attack', 1, 'TCP', 61040, 80, { hostname: '52.54.234.146', url: '/', http_method: 'GET', http_user_agent: 'Mozilla/5.0 (compatible; Nmap Scripting Engine; https://nmap.org/book/nse.html)', status: 301 })] });
   },
   async sqlmap() {
     await post('/ids/suricata', { events: [
-      eve(1100201, 'ATALAYA SURICATA sqlmap User-Agent', 'Web Application Attack', 1, 'TCP', 52210, 80, { url: '/api/health?check=1', http_method: 'GET', http_user_agent: 'sqlmap/1.8.4#stable (https://sqlmap.org)' }),
-      eve(1100202, 'ATALAYA SURICATA SQLi UNION SELECT en URI', 'Web Application Attack', 1, 'TCP', 52211, 80, { url: '/api/health?check=1 UNION ALL SELECT NULL--', http_method: 'GET', http_user_agent: 'sqlmap/1.8.4#stable (https://sqlmap.org)' }),
-      eve(1100204, 'ATALAYA SURICATA SQLi basada en tiempo (SLEEP)', 'Web Application Attack', 1, 'TCP', 52212, 80, { url: '/api/health?check=1 AND SLEEP(5)', http_method: 'GET', http_user_agent: 'sqlmap/1.8.4#stable (https://sqlmap.org)' }),
+      eve(1000200, 'ATALAYA S3 SQLMap User-Agent', 'Web Application Attack', 1, 'TCP', 52210, 80, { url: '/api/health?check=1', http_method: 'GET', http_user_agent: 'sqlmap/1.8.4#stable (https://sqlmap.org)' }),
+      eve(1000201, 'ATALAYA S3 SQLi UNION SELECT en URI', 'Web Application Attack', 1, 'TCP', 52211, 80, { url: '/api/health?check=1 UNION ALL SELECT NULL--', http_method: 'GET', http_user_agent: 'sqlmap/1.8.4#stable (https://sqlmap.org)' }),
+      eve(1000203, 'ATALAYA S3 SQLi basada en tiempo (SLEEP)', 'Web Application Attack', 1, 'TCP', 52212, 80, { url: '/api/health?check=1 AND SLEEP(5)', http_method: 'GET', http_user_agent: 'sqlmap/1.8.4#stable (https://sqlmap.org)' }),
     ] });
-    snort(1000005, 'ATALAYA SNORT Herramienta sqlmap (User-Agent)', 'Web Application Attack', 1, 'TCP', `${FRONT}:44120`, `${BACK}:3000`);
-    snort(1000006, 'ATALAYA SNORT Inyeccion SQL UNION SELECT', 'Web Application Attack', 1, 'TCP', `${FRONT}:44121`, `${BACK}:3000`);
-    snort(1000004, 'ATALAYA SNORT Posible fuerza bruta al login', 'Attempted User Privilege Gain', 1, 'TCP', `${FRONT}:44188`, `${BACK}:3000`);
+    snort(1000006, 'ATALAYA SNORT Herramienta sqlmap (User-Agent)', 'Web Application Attack', 1, 'TCP', `${FRONT}:44120`, `${BACK}:3000`);
+    snort(1000007, 'ATALAYA SNORT Inyeccion SQL UNION SELECT', 'Web Application Attack', 1, 'TCP', `${FRONT}:44121`, `${BACK}:3000`);
+    snort(1000005, 'ATALAYA SNORT Posible fuerza bruta al login', 'Attempted User Privilege Gain', 1, 'TCP', `${FRONT}:44188`, `${BACK}:3000`);
   },
 };
 
